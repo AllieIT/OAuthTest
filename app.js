@@ -1,8 +1,11 @@
 // region Module imports
 const express = require('express');
 const indexRouter = require('./routes/index');
+const authRouter = require('./routes/auth');
+const passport = require('passport');
 const dotenv = require('dotenv');
 const path = require('path');
+const session = require('express-session');
 const createError = require('http-errors');
 const cookieParser = require('cookie-parser');
 const morgan = require('morgan');
@@ -18,11 +21,22 @@ if (process.env.NODE_ENV === 'development') {
   app.use(morgan('dev'));
 }
 
+require('./config/passport')(passport)
+
 // View engine setup
 app.set('views', path.join(__dirname, 'views'));
 app.set('view engine', 'pug');
 
 // region Middleware Setup
+app.use(session({
+  secret: 'i like cakes',
+  resave: false,
+  saveUninitialized: false
+}));
+
+app.use(passport.initialize());
+app.use(passport.session());
+
 app.use(express.json());
 app.use(express.urlencoded({ extended: false }));
 app.use(express.static(path.join(__dirname, 'public')));
@@ -35,8 +49,8 @@ app.use(sassMiddleware({
   sourceMap: true
 }));
 
-
 app.use('/', indexRouter);
+app.use('/auth', authRouter);
 
 // catch 404 and forward to error handler
 app.use(function(req, res, next) {
